@@ -4,6 +4,7 @@ import (
 	"gin-vue-admin/global"
 	"gin-vue-admin/model"
 	"gin-vue-admin/model/request"
+	"gin-vue-admin/utils"
 )
 
 //@author: [piexlmax](https://github.com/piexlmax)
@@ -13,7 +14,6 @@ import (
 //@return: err error
 
 func CreateBusActivity(busAct model.BusActivity) (err error) {
-
 	err = global.GVA_DB.Create(&busAct).Error
 	return err
 }
@@ -75,7 +75,27 @@ func GetBusActivityInfoList(info request.BusActivitySearch) (err error, list int
 	db := global.GVA_DB.Model(&model.BusActivity{})
 	var busActs []model.BusActivity
 	// 如果有条件搜索 下方会自动创建搜索语句
+	if info.UserId != 0 {
+		db = db.Where("user_id = ?", info.UserId)
+	}
 	err = db.Count(&total).Error
 	err = db.Limit(limit).Offset(offset).Find(&busActs).Error
 	return err, busActs, total
+}
+
+func InvolvedOrExitActivities(busAct model.BusInvolvedActivitys) (err error) {
+	var searchBusAct model.BusInvolvedActivitys
+	db := global.GVA_DB.Model(&model.BusInvolvedActivitys{})
+	// 如果有条件搜索 下方会自动创建搜索语句
+	if err := db.Where("user_id = ? AND activity_id = ?", busAct.UserId, busAct.ActivityId).First(&searchBusAct).Error; err != nil {
+		err = global.GVA_DB.Create(&busAct).Error
+		return err
+	}
+	busAct.CreatedAt = searchBusAct.CreatedAt
+	busAct.ID = searchBusAct.ID
+	utils.ToolJsonFmt(busAct)
+	utils.ToolJsonFmt(searchBusAct)
+	err = global.GVA_DB.Save(&busAct).Error
+	return err
+
 }

@@ -12,6 +12,8 @@ func InitBusActivityPublicRouter(Router *gin.RouterGroup) {
 	{
 		BusActivityRouter.GET("findBusActivity", v1.FindBusActivity)       // 根据ID获取BusActivity
 		BusActivityRouter.GET("getBusActivityList", v1.GetBusActivityList) // 获取BusActivity列表
+
+		BusActivityRouter.POST("involvedOrExitActivities", v1.InvolvedOrExitActivities) // 参加活动
 	}
 }
 

@@ -6,7 +6,7 @@ import (
 	"gin-vue-admin/model/request"
 	"gin-vue-admin/model/response"
 	"gin-vue-admin/service"
-	"gin-vue-admin/utils"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -23,13 +23,9 @@ import (
 func CreateBusActivity(c *gin.Context) {
 	var busAct model.BusActivity
 	_ = c.ShouldBindJSON(&busAct)
-
-	// dataT, _ := time.ParseInLocation("2006-01-02 15:04:05", busAct.DateTimeStr, time.Local)
-	// fmt.Println(busAct.DateTimeStr)
-	// fmt.Println(dataT)
-	// busAct.DateTime = dataT
-	utils.ToolJsonFmt(busAct)
-
+	userId := c.GetHeader("x-user-id")
+	userIdInt, _ := strconv.Atoi(userId)
+	busAct.UserId = userIdInt
 	if err := service.CreateBusActivity(busAct); err != nil {
 		global.GVA_LOG.Error("创建失败!", zap.Any("err", err))
 		response.FailWithMessage("创建失败", c)
@@ -125,6 +121,7 @@ func FindBusActivity(c *gin.Context) {
 func GetBusActivityList(c *gin.Context) {
 	var pageInfo request.BusActivitySearch
 	_ = c.ShouldBindQuery(&pageInfo)
+
 	if err, list, total := service.GetBusActivityInfoList(pageInfo); err != nil {
 		global.GVA_LOG.Error("获取失败!", zap.Any("err", err))
 		response.FailWithMessage("获取失败", c)
@@ -135,5 +132,17 @@ func GetBusActivityList(c *gin.Context) {
 			Page:     pageInfo.Page,
 			PageSize: pageInfo.PageSize,
 		}, "获取成功", c)
+	}
+}
+
+// 参加与退出活动
+func InvolvedOrExitActivities(c *gin.Context) {
+	var busAct model.BusInvolvedActivitys
+	_ = c.ShouldBindJSON(&busAct)
+	if err := service.InvolvedOrExitActivities(busAct); err != nil {
+		global.GVA_LOG.Error("参与失败!", zap.Any("err", err))
+		response.FailWithMessage("参与失败", c)
+	} else {
+		response.OkWithMessage("参与成功", c)
 	}
 }

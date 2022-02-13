@@ -120,7 +120,7 @@ func FindBusGame(c *gin.Context) {
 func GetBusGameList(c *gin.Context) {
 	var pageInfo request.BusGameSearch
 	_ = c.ShouldBindQuery(&pageInfo)
-	if err, list, total := service.GetBusGameInfoList(pageInfo); err != nil {
+	if list, total, err := service.GetBusGameInfoList(pageInfo); err != nil {
 		global.GVA_LOG.Error("获取失败!", zap.Any("err", err))
 		response.FailWithMessage("获取失败", c)
 	} else {

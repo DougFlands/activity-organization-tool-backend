@@ -1,11 +1,9 @@
 package service
 
 import (
-	"fmt"
 	"gin-vue-admin/global"
 	"gin-vue-admin/model"
 	"gin-vue-admin/model/request"
-	"gin-vue-admin/utils"
 )
 
 //@author: [piexlmax](https://github.com/piexlmax)
@@ -69,20 +67,17 @@ func GetBusGame(id uint) (err error, busGame model.BusGame) {
 //@param: info request.BusGameSearch
 //@return: err error, list interface{}, total int64
 
-func GetBusGameInfoList(info request.BusGameSearch) (err error, list interface{}, total int64) {
+func GetBusGameInfoList(info request.BusGameSearch) (list interface{}, total int64, err error) {
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
-	utils.ToolJsonFmt(info)
 	// 创建db
 	db := global.GVA_DB.Model(&model.BusGame{})
-	fmt.Print(db)
-	utils.ToolJsonFmt(db)
 	var busGames []model.BusGame
 	// 如果有条件搜索 下方会自动创建搜索语句
 	if info.Type != 0 {
 		db = db.Where("type = ?", info.Type)
 	}
-	err = db.Count(&total).Error
+	_ = db.Count(&total).Error
 	err = db.Limit(limit).Offset(offset).Find(&busGames).Error
-	return err, busGames, total
+	return busGames, total, err
 }
