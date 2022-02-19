@@ -135,6 +135,31 @@ func GetBusActivityList(c *gin.Context) {
 	}
 }
 
+// @Tags BusActivity
+// @Summary 分页获取BusActivity列表
+// @Security ApiKeyAuth
+// @accept application/json
+// @Produce application/json
+// @Param data body request.BusActivitySearch true "分页获取BusActivity列表"
+// @Success 200 {string} string "{"success":true,"data":{},"msg":"获取成功"}"
+// @Router /busAct/getBusActivityList [get]
+func GetBusInvolvedActivityList(c *gin.Context) {
+	var pageInfo request.BusInvolvedActivitySearch
+	_ = c.ShouldBindQuery(&pageInfo)
+
+	if err, list, total := service.GetBusInvolvedActivityList(pageInfo); err != nil {
+		global.GVA_LOG.Error("获取失败!", zap.Any("err", err))
+		response.FailWithMessage("获取失败", c)
+	} else {
+		response.OkWithDetailed(response.PageResult{
+			List:     list,
+			Total:    total,
+			Page:     pageInfo.Page,
+			PageSize: pageInfo.PageSize,
+		}, "获取成功", c)
+	}
+}
+
 // 参加与退出活动
 func InvolvedOrExitActivities(c *gin.Context) {
 	var busAct model.BusInvolvedActivitys

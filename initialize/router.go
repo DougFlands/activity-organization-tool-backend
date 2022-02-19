@@ -28,6 +28,7 @@ func Routers() *gin.Engine {
 		router.InitBaseRouter(PublicGroup)              // 注册基础功能路由 不做鉴权
 		router.InitBusActivityPublicRouter(PublicGroup) // 注册活动路由
 		router.InitBusGamePublicRouter(PublicGroup)     // 注册游戏路由
+		router.InitInitRouter(PublicGroup)              // 自动初始化相关
 	}
 	PrivateGroup := Router.Group("")
 	PrivateGroup.Use(middleware.RegAuth())
@@ -38,7 +39,6 @@ func Routers() *gin.Engine {
 	AdminGroup := Router.Group("")
 	AdminGroup.Use(middleware.AdminAuth())
 	{
-		router.InitInitRouter(AdminGroup)              // 自动初始化相关
 		router.InitBusGameAdminRouter(AdminGroup)      // 游戏管理
 		router.InitBusActivityAdminRouter(PublicGroup) // 注册活动路由
 	}

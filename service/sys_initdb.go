@@ -120,6 +120,7 @@ func InitDB(conf request.InitDB) error {
 		model.SysOperationRecord{},
 		model.BusActivity{},
 		model.BusGame{},
+		model.BusInvolvedActivitys{},
 	)
 	if err != nil {
 		global.GVA_DB = nil

@@ -6,8 +6,13 @@ import (
 
 type BusActivity struct {
 	global.GVA_MODEL
-	GameId       int        `json:"gameId" form:"gameId" gorm:"column:game_id;comment:游戏id;"`
-	UserId       int        `json:"userId" form:"userId" gorm:"column:user_id;comment:用户id;"`
+
+	BusGame BusGame `json:"busGame"  gorm:"foreignKey:ID;references:GameId;comment:游戏"`
+	GameId  int     `json:"gameId" form:"gameId" gorm:"column:game_id;comment:游戏id;"`
+
+	User   SysUserInfo `json:"user"  gorm:"foreignKey:ID;references:UserId;comment:用户角色"`
+	UserId int         `json:"userId" gorm:"comment:用户id"`
+
 	Location     string     `json:"location" form:"location" gorm:"column:location;comment:地点;"`
 	Price        string     `json:"price" form:"price" gorm:"column:price;comment:价格;"`
 	Participants int        `json:"participants" form:"participants" gorm:"column:participants;comment:参加人数;default 0"`

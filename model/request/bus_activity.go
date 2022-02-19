@@ -6,3 +6,8 @@ type BusActivitySearch struct {
 	model.BusActivity
 	PageInfo
 }
+
+type BusInvolvedActivitySearch struct {
+	model.BusInvolvedActivitys
+	PageInfo
+}
