@@ -12,16 +12,11 @@ type BusInvolvedActivitys struct {
 	User   SysUserInfo `json:"user" gorm:"foreignKey:ID ;references:UserId;comment:用户角色"`
 	UserId int         `json:"userId" gorm:"comment:用户id"`
 
-	Activity   BusActivity `json:"bus_activity" gorm:"foreignKey:ID;references:ActivityId;comment:用户角色"`
+	Activity   BusActivity `json:"busActivity" gorm:"foreignKey:ID;references:ActivityId;comment:用户角色"`
 	ActivityId int         `json:"activityId" gorm:"comment:活动ID"`
 
 	Status int `json:"status" form:"status" gorm:"column:status;comment:状态;"`
 }
-
-// type BusInvolvedActivitysList struct {
-// 	BusInvolvedActivitys
-// 	Activitys BusActivity
-// }
 
 func (BusInvolvedActivitys) TableName() string {
 	return "bus_involved_activity"

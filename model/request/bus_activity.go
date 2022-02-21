@@ -10,4 +10,5 @@ type BusActivitySearch struct {
 type BusInvolvedActivitySearch struct {
 	model.BusInvolvedActivitys
 	PageInfo
+	UserId int `json:"userId" form:"userId"`
 }
