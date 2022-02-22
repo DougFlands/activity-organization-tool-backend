@@ -81,6 +81,9 @@ func GetBusActivityInfoList(info request.BusActivitySearch) (err error, list int
 	db = db.Preload("User").Preload("BusGame")
 	err = db.Count(&total).Error
 	err = db.Limit(limit).Offset(offset).Find(&busActs).Error
+
+	// 搜索参与人数
+	findInvolvedParticipants(busActs)
 	return err, busActs, total
 }
 
@@ -98,10 +101,10 @@ func GetBusInvolvedActivityList(info request.BusInvolvedActivitySearch) (err err
 	var busInvolvedActs []model.BusInvolvedActivitys
 	// 如果有条件搜索 下方会自动创建搜索语句
 	db = db.Where("user_id = ? AND status = 1", info.UserId).Preload("User").Preload("Activity").Preload("Activity.BusGame").Preload("Activity.User")
-
 	err = db.Count(&total).Error
 	err = db.Limit(limit).Offset(offset).Find(&busInvolvedActs).Error
-
+	// 搜索参与人数
+	findInvolvedParticipants2(busInvolvedActs)
 	return err, busInvolvedActs, total
 }
 
@@ -120,4 +123,30 @@ func InvolvedOrExitActivities(busAct model.BusInvolvedActivitys) (err error) {
 	err = global.GVA_DB.Save(&busAct).Error
 	return err
 
+}
+
+// 搜索参与人数
+func findInvolvedParticipants(busActs []model.BusActivity) error {
+	var err error
+	for i := 0; i < len(busActs); i++ {
+		var participants int64
+		involvedDb := global.GVA_DB.Model(&model.BusInvolvedActivitys{})
+		involvedDb = involvedDb.Where("user_id = ? AND activity_id = ? AND status = 1", busActs[i].UserId, busActs[i].ID)
+		err = involvedDb.Count(&participants).Error
+		busActs[i].Participants = int(participants)
+	}
+	return err
+}
+
+// 搜索参与人数
+func findInvolvedParticipants2(busActs []model.BusInvolvedActivitys) error {
+	var err error
+	for i := 0; i < len(busActs); i++ {
+		var participants int64
+		involvedDb := global.GVA_DB.Model(&model.BusInvolvedActivitys{})
+		involvedDb = involvedDb.Where("user_id = ? AND activity_id = ? AND status = 1", busActs[i].UserId, busActs[i].ActivityId)
+		err = involvedDb.Count(&participants).Error
+		busActs[i].Activity.Participants = int(participants)
+	}
+	return err
 }
