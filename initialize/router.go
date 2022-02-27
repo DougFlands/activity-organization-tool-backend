@@ -33,14 +33,15 @@ func Routers() *gin.Engine {
 	PrivateGroup := Router.Group("")
 	PrivateGroup.Use(middleware.RegAuth())
 	{
-		router.InitUserRouter(PrivateGroup) // 注册用户路由
+		router.InitUserRouter(PrivateGroup)               // 注册用户路由
+		router.InitBusActivityPrivateRouter(PrivateGroup) // 注册用户路由
 	}
 
 	AdminGroup := Router.Group("")
 	AdminGroup.Use(middleware.AdminAuth())
 	{
-		router.InitBusGameAdminRouter(AdminGroup)      // 游戏管理
-		router.InitBusActivityAdminRouter(PublicGroup) // 注册活动路由
+		router.InitBusGameAdminRouter(AdminGroup)     // 游戏管理
+		router.InitBusActivityAdminRouter(AdminGroup) // 注册活动路由
 	}
 	global.GVA_LOG.Info("router register success")
 	return Router

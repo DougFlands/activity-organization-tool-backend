@@ -1,10 +1,12 @@
 package service
 
 import (
+	"errors"
 	"gin-vue-admin/global"
 	"gin-vue-admin/model"
 	"gin-vue-admin/model/request"
 	"gin-vue-admin/utils"
+	"time"
 )
 
 //@author: [piexlmax](https://github.com/piexlmax)
@@ -75,21 +77,27 @@ func GetBusActivityInfoList(info request.BusActivitySearch) (err error, list int
 	db := global.GVA_DB.Model(&model.BusActivity{})
 	var busActs []model.BusActivity
 	// 如果有条件搜索 下方会自动创建搜索语句
+	// 查询当前用户创建的活动
 	if info.UserId != 0 {
-		db = db.Where("user_id = ?", info.User)
+		db = db.Where("user_id = ?", info.UserId)
+	} else {
+		db = db.Where("date_time >= ?", time.Now().Format("2006-01-02 15:04:05"))
 	}
-	db = db.Preload("User").Preload("BusGame")
+	db = db.Order("date_time Desc").Preload("User").Preload("BusGame")
 	err = db.Count(&total).Error
 	err = db.Limit(limit).Offset(offset).Find(&busActs).Error
 
 	// 搜索参与人数
-	findInvolvedParticipants(busActs)
+	for i := 0; i < len(busActs); i++ {
+		participants, _, _ := findInvolvedParticipants(busActs[i].UserId, busActs[i].ID)
+		busActs[i].Participants = participants
+	}
 	return err, busActs, total
 }
 
 //@author: [piexlmax](https://github.com/piexlmax)
 //@function: GetBusActivityInfoList
-//@description: 分页获取BusActivity记录
+//@description: 分页获取已参与的BusActivity记录
 //@param: info request.BusActivitySearch
 //@return: err error, list interface{}, total int64
 
@@ -100,11 +108,14 @@ func GetBusInvolvedActivityList(info request.BusInvolvedActivitySearch) (err err
 	db := global.GVA_DB.Model(&model.BusInvolvedActivitys{})
 	var busInvolvedActs []model.BusInvolvedActivitys
 	// 如果有条件搜索 下方会自动创建搜索语句
-	db = db.Where("user_id = ? AND status = 1", info.UserId).Preload("User").Preload("Activity").Preload("Activity.BusGame").Preload("Activity.User")
+	db = db.Where("user_id = ? AND status = 1", info.UserId).Order("updated_at Desc").Preload("User").Preload("Activity").Preload("Activity.BusGame").Preload("Activity.User")
 	err = db.Count(&total).Error
 	err = db.Limit(limit).Offset(offset).Find(&busInvolvedActs).Error
 	// 搜索参与人数
-	findInvolvedParticipants2(busInvolvedActs)
+	for i := 0; i < len(busInvolvedActs); i++ {
+		participants, _, _ := findInvolvedParticipants(busInvolvedActs[i].UserId, uint(busInvolvedActs[i].ActivityId))
+		busInvolvedActs[i].Activity.Participants = participants
+	}
 	return err, busInvolvedActs, total
 }
 
@@ -112,41 +123,43 @@ func InvolvedOrExitActivities(busAct model.BusInvolvedActivitys) (err error) {
 	var searchBusAct model.BusInvolvedActivitys
 	db := global.GVA_DB.Model(&model.BusInvolvedActivitys{})
 	// 如果有条件搜索 下方会自动创建搜索语句
-	if err := db.Where("user_id = ? AND activity_id = ?", busAct.User, busAct.Activity).First(&searchBusAct).Error; err != nil {
+	if err := db.Where("user_id = ? AND activity_id = ?", busAct.UserId, busAct.ActivityId).Preload("Activity.BusGame").First(&searchBusAct).Error; err != nil {
 		err = global.GVA_DB.Create(&busAct).Error
 		return err
 	}
+	utils.ToolJsonFmt(searchBusAct)
 	busAct.CreatedAt = searchBusAct.CreatedAt
 	busAct.ID = searchBusAct.ID
-	utils.ToolJsonFmt(busAct)
-	utils.ToolJsonFmt(searchBusAct)
+
+	if busAct.Status == 1 {
+		participants, _, _ := findInvolvedParticipants(busAct.UserId, uint(busAct.ActivityId))
+
+		if participants != 0 {
+			return errors.New("已参与过该活动")
+		}
+
+		involvedActivityParticipants, _, _ := findInvolvedParticipants(0, uint(busAct.ActivityId))
+		if involvedActivityParticipants != 0 && involvedActivityParticipants >= searchBusAct.Activity.BusGame.PeopleNum {
+			return errors.New("参与人数达到上限")
+		}
+
+	}
 	err = global.GVA_DB.Save(&busAct).Error
 	return err
 
 }
 
 // 搜索参与人数
-func findInvolvedParticipants(busActs []model.BusActivity) error {
-	var err error
-	for i := 0; i < len(busActs); i++ {
-		var participants int64
-		involvedDb := global.GVA_DB.Model(&model.BusInvolvedActivitys{})
-		involvedDb = involvedDb.Where("user_id = ? AND activity_id = ? AND status = 1", busActs[i].UserId, busActs[i].ID)
-		err = involvedDb.Count(&participants).Error
-		busActs[i].Participants = int(participants)
+func findInvolvedParticipants(userId int, activityId uint) (participant int, involvedActivity model.BusInvolvedActivitys, err error) {
+	var participants int64
+	involvedDb := global.GVA_DB.Model(&involvedActivity)
+	if userId > 0 {
+		involvedDb = involvedDb.Where("user_id = ?", userId)
 	}
-	return err
-}
-
-// 搜索参与人数
-func findInvolvedParticipants2(busActs []model.BusInvolvedActivitys) error {
-	var err error
-	for i := 0; i < len(busActs); i++ {
-		var participants int64
-		involvedDb := global.GVA_DB.Model(&model.BusInvolvedActivitys{})
-		involvedDb = involvedDb.Where("user_id = ? AND activity_id = ? AND status = 1", busActs[i].UserId, busActs[i].ActivityId)
-		err = involvedDb.Count(&participants).Error
-		busActs[i].Activity.Participants = int(participants)
+	if activityId > 0 {
+		involvedDb = involvedDb.Where("activity_id = ?", activityId)
 	}
-	return err
+	involvedDb = involvedDb.Where("status = 1").Preload("User").Preload("Activity")
+	err = involvedDb.Count(&participants).Error
+	return int(participants), involvedActivity, err
 }

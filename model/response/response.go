@@ -1,8 +1,9 @@
 package response
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Response struct {
@@ -12,8 +13,10 @@ type Response struct {
 }
 
 const (
-	ERROR   = 7
-	SUCCESS = 0
+	ERROR      = 7
+	AUTH_USER  = 401
+	AUTH_ADMIN = 402
+	SUCCESS    = 0
 )
 
 func Result(code int, data interface{}, msg string, c *gin.Context) {
@@ -51,4 +54,12 @@ func FailWithMessage(message string, c *gin.Context) {
 
 func FailWithDetailed(data interface{}, message string, c *gin.Context) {
 	Result(ERROR, data, message, c)
+}
+
+func FailWithAuthUserMessage(message string, c *gin.Context) {
+	Result(AUTH_USER, map[string]interface{}{}, message, c)
+}
+
+func FailWithAuthAdminMessage(message string, c *gin.Context) {
+	Result(AUTH_ADMIN, map[string]interface{}{}, message, c)
 }

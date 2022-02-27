@@ -12,7 +12,8 @@ func RegAuth() gin.HandlerFunc {
 		userId := c.Request.Header.Get("x-user-id")
 		accept := service.FindUser(userId)
 		if !accept {
-			response.FailWithMessage("用户未注册", c)
+			response.FailWithAuthUserMessage("用户未注册", c)
+			c.Abort()
 		}
 		c.Next()
 	}
@@ -23,7 +24,7 @@ func AdminAuth() gin.HandlerFunc {
 		userId := c.Request.Header.Get("x-user-id")
 		accept := service.FindAdminUser(userId)
 		if !accept {
-			response.FailWithMessage("用户非管理员", c)
+			response.FailWithAuthAdminMessage("用户非管理员", c)
 			c.Abort()
 		}
 		c.Next()

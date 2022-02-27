@@ -166,7 +166,7 @@ func InvolvedOrExitActivities(c *gin.Context) {
 	_ = c.ShouldBindJSON(&busAct)
 	if err := service.InvolvedOrExitActivities(busAct); err != nil {
 		global.GVA_LOG.Error("参与失败!", zap.Any("err", err))
-		response.FailWithMessage("参与失败", c)
+		response.FailWithMessage(err.Error(), c)
 	} else {
 		response.OkWithMessage("参与成功", c)
 	}

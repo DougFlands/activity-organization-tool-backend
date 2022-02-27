@@ -5,6 +5,7 @@ import "gin-vue-admin/model"
 type BusActivitySearch struct {
 	model.BusActivity
 	PageInfo
+	UserId int `json:"userId" form:"userId"`
 }
 
 type BusInvolvedActivitySearch struct {
