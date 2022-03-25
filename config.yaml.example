@@ -1,0 +1,97 @@
+aliyun-oss:
+  access-key-id: yourAccessKeyId
+  access-key-secret: yourAccessKeySecret
+  bucket-name: yourBucketName
+  bucket-url: yourBucketUrl
+  endpoint: yourEndpoint
+autocode:
+  root: E:\code\Go\src\x
+  server: /server
+  server-api: /api/v1
+  server-initialize: /initialize
+  server-model: /model
+  server-request: /model/request/
+  server-router: /router
+  server-service: /service
+  transfer-restart: true
+  web: /web/src
+  web-api: /api
+  web-flow: /view
+  web-form: /view
+  web-table: /view
+captcha:
+  img-height: 80
+  img-width: 240
+  key-long: 6
+casbin:
+  model-path: ./resource/rbac_model.conf
+email:
+  from: xxx@163.com
+  host: smtp.163.com
+  is-ssl: true
+  nickname: test
+  port: 465
+  secret: xxx
+  to: xxx@qq.com
+excel:
+  dir: ./resource/excel/
+jwt:
+  signing-key: xxx
+  expires-time: 604800
+  buffer-time: 86400
+local:
+  path: uploads/file
+mysql:
+  path: 00.00.00.00:30080
+  config: charset=utf8mb4&parseTime=True&loc=Local
+  db-name: xxx
+  username: root
+  password: xxx
+  max-idle-conns: 0
+  max-open-conns: 0
+  log-mode: false
+  log-zap: ""
+qiniu:
+  access-key: ""
+  bucket: ""
+  img-path: ""
+  secret-key: ""
+  use-cdn-domains: false
+  use-https: false
+  zone: ZoneHuaDong
+redis:
+  db: 0
+  addr: 127.0.0.1:6379
+  password: ""
+system:
+  env: public
+  addr: 8888
+  db-type: mysql
+tencent-cos:
+  base-url: https://gin.vue.admin
+  bucket: xxxxx-10005608
+  path-prefix: gin-vue-admin
+  region: ap-shanghai
+  secret-id: xxxxxxxx
+  secret-key: xxxxxxxx
+timer:
+  start: true
+  spec: "@daily"
+  detail:
+    - tableName: sys_operation_records
+      compareField: created_at
+      interval: 2160h
+zap:
+  level: info
+  format: console
+  prefix: "[GIN-VUE-ADMIN]"
+  director: log
+  link-name: latest_log
+  showLine: false
+  encode-level: LowercaseColorLevelEncoder
+  stacktrace-key: stacktrace
+  log-in-console: true
+# 微信登陆id
+wx:
+  app-id:
+  app-secret:
