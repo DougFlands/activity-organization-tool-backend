@@ -33,7 +33,9 @@ func Login(u model.SysLoginInfo) (sysUserInfo model.SysUserInfo, err error) {
 	auth := mini.GetAuth()
 	session, err := auth.Code2Session(u.Code)
 	if err != nil {
+		utils.ToolJsonFmt(m)
 		fmt.Printf("err: %v", err)
+		return model.SysUserInfo{}, err
 	}
 	userInfo := model.SysUserInfo{
 		OpenID:    session.OpenID,
