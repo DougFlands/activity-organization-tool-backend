@@ -5,7 +5,7 @@ ENV GOPROXY=https://goproxy.io,direct
 WORKDIR /go/src/backend
 COPY . .
 
-RUN go env && go build -o server .
+RUN go env && go build -o -buildvcs=false server .
 
 FROM alpine:latest
 
