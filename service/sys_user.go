@@ -23,9 +23,10 @@ import (
 func Login(u model.SysLoginInfo) (sysUserInfo model.SysUserInfo, err error) {
 	wc := wechat.NewWechat()
 	memory := cache.NewMemory()
+	m := global.GVA_CONFIG.Wx
 	cfg := &miniConfig.Config{
-		AppID:     "wxc2a5340706e806a3",
-		AppSecret: "51760ad3128ea3c0fb9a478a3f6322ea",
+		AppID:     m.AppID,
+		AppSecret: m.AppSecret,
 		Cache:     memory,
 	}
 	mini := wc.GetMiniProgram(cfg)

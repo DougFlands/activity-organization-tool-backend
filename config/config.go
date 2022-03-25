@@ -9,4 +9,5 @@ type Server struct {
 	Mysql Mysql `mapstructure:"mysql" json:"mysql" yaml:"mysql"`
 	// oss
 	Timer Timer `mapstructure:"timer" json:"timer" yaml:"timer"`
+	Wx    Wx    `mapstructure:"wx" json:"wx" yaml:"wx"`
 }
