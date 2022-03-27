@@ -15,4 +15,4 @@ COPY --from=0 /go/src/backend ./
 
 EXPOSE 8888
 
-ENTRYPOINT ./server -c ./project-config/config.docker.yaml
+ENTRYPOINT ./server -c ./config.docker.yaml
