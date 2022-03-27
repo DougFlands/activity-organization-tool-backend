@@ -25,7 +25,8 @@ func Login(c *gin.Context) {
 	sysUserInfo, err := service.Login(wxLogin)
 	if err != nil {
 		fmt.Printf("err: %v", err)
-		response.OkWithMessage("登陆失败", c)
+		response.FailWithMessage("登陆失败", c)
+		return
 	}
 	response.OkWithDetailed(response.SysUserResponse{
 		User: sysUserInfo,
