@@ -42,11 +42,11 @@ web
 ├── latest_log  -- vue-cli 配置
 └── main.go  -- package.json
 ```
+编译  
+docker build -t activity-backend ./ -f ./Dockerfile
 
-docker build -t admin-backend ./ -f ./Dockerfile
+运行  
+docker run -v e:/activity-backend/project-config:/go/src/backend/project-config fland-docker.pkg.coding.net/juben/backend/activity-backend:latest
 
-docker tag admin-backend fland-docker.pkg.coding.net/golang/admin/admin-backend
-docker push fland-docker.pkg.coding.net/golang/admin/admin-backend
-
-docker tag admin-front fland-docker.pkg.coding.net/golang/admin/admin-front
-docker push fland-docker.pkg.coding.net/golang/admin/admin-front
+拉取线上镜像  
+docker pull /juben/backend/activity-backend:latest

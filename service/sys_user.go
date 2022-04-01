@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"gin-vue-admin/global"
 	"gin-vue-admin/model"
+	"gin-vue-admin/model/request"
 	"gin-vue-admin/utils"
 
-	uuid "github.com/satori/go.uuid"
 	"github.com/silenceper/wechat/v2"
 	"github.com/silenceper/wechat/v2/cache"
 	miniConfig "github.com/silenceper/wechat/v2/miniprogram/config"
@@ -43,8 +43,6 @@ func Login(u model.SysLoginInfo) (sysUserInfo model.SysUserInfo, err error) {
 		NickName:  u.NickName,
 	}
 
-	utils.ToolJsonFmt(userInfo)
-
 	// 搜索是否存在数据
 	if !errors.Is(global.GVA_DB.Where("openID = ?", userInfo.OpenID).First(&userInfo).Error, gorm.ErrRecordNotFound) {
 		// 存在则更新
@@ -63,8 +61,8 @@ func Login(u model.SysLoginInfo) (sysUserInfo model.SysUserInfo, err error) {
 //@param: uuid uuid.UUID, authorityId string
 //@return: err error
 
-func SetUserAuthority(uuid uuid.UUID, authorityId string) (err error) {
-	// err = global.GVA_DB.Where("uuid = ?", uuid).First(&model.SysUser{}).Update("authority_id", authorityId).Error
+func SetUserAuthority(id int, isAdmin int) (err error) {
+	err = global.GVA_DB.Where("id = ?", id).First(&model.SysUserInfo{}).Update("isAdmin", isAdmin).Error
 	return err
 }
 
@@ -78,8 +76,35 @@ func FindUser(userId string) (accept bool) {
 
 func FindAdminUser(userId string) (accept bool) {
 	var user model.SysUserInfo
-	if err := global.GVA_DB.Where("id = ? and isAdmin = 1", userId).First(&user).Error; err != nil {
+	if err := global.GVA_DB.Where("id = ? and (isAdmin = 1 OR isAdmin = 2)", userId).First(&user).Error; err != nil {
 		return false
 	}
 	return true
+}
+
+// 找最高级管理员
+func FindHighestAndAdminUser(userId string) (accept bool) {
+	var user model.SysUserInfo
+	if err := global.GVA_DB.Where("id = ? and isAdmin = 2", userId).First(&user).Error; err != nil {
+		return false
+	}
+	return true
+}
+
+// 找用户和1级管理员
+func FindUserAndAdminUser(info request.UserList) (err error, list interface{}, total int64) {
+	limit := info.PageSize
+	offset := info.PageSize * (info.Page - 1)
+	// 创建db
+	db := global.GVA_DB.Model(&model.SysUserInfo{})
+	var busActs []model.SysUserInfo
+	// 如果有条件搜索 下方会自动创建搜索语句
+	db = db.Where("Not isAdmin = 2")
+	if info.UserId != 0 {
+		db = db.Where("id = ?", info.UserId)
+	}
+	db = db.Order("created_at Desc")
+	err = db.Count(&total).Error
+	err = db.Limit(limit).Offset(offset).Find(&busActs).Error
+	return err, busActs, total
 }

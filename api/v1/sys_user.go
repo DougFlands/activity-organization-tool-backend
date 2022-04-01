@@ -7,7 +7,6 @@ import (
 	"gin-vue-admin/model/request"
 	"gin-vue-admin/model/response"
 	"gin-vue-admin/service"
-	"gin-vue-admin/utils"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -31,7 +30,24 @@ func Login(c *gin.Context) {
 	response.OkWithDetailed(response.SysUserResponse{
 		User: sysUserInfo,
 	}, "获取成功", c)
+}
 
+// 查找用户和1级管理员
+func FindUserAndAdminUser(c *gin.Context) {
+	var pageInfo request.UserList
+	_ = c.ShouldBindQuery(&pageInfo)
+
+	if err, list, total := service.FindUserAndAdminUser(pageInfo); err != nil {
+		global.GVA_LOG.Error("获取失败!", zap.Any("err", err))
+		response.FailWithMessage("获取失败", c)
+	} else {
+		response.OkWithDetailed(response.PageResult{
+			List:     list,
+			Total:    total,
+			Page:     pageInfo.Page,
+			PageSize: pageInfo.PageSize,
+		}, "获取成功", c)
+	}
 }
 
 // @Tags SysUser
@@ -42,14 +58,14 @@ func Login(c *gin.Context) {
 // @Param data body request.SetUserAuth true "用户UUID, 角色ID"
 // @Success 200 {string} string "{"success":true,"data":{},"msg":"修改成功"}"
 // @Router /user/setUserAuthority [post]
-func SetUserAuthority(c *gin.Context) {
+func SetAdminAuthority(c *gin.Context) {
 	var sua request.SetUserAuth
 	_ = c.ShouldBindJSON(&sua)
-	if UserVerifyErr := utils.Verify(sua, utils.SetUserAuthorityVerify); UserVerifyErr != nil {
-		response.FailWithMessage(UserVerifyErr.Error(), c)
-		return
-	}
-	if err := service.SetUserAuthority(sua.UUID, sua.AuthorityId); err != nil {
+	// if UserVerifyErr := utils.Verify(sua, utils.SetUserAuthorityVerify); UserVerifyErr != nil {
+	// 	response.FailWithMessage(UserVerifyErr.Error(), c)
+	// 	return
+	// }
+	if err := service.SetUserAuthority(sua.UserId, sua.IsAdmin); err != nil {
 		global.GVA_LOG.Error("修改失败!", zap.Any("err", err))
 		response.FailWithMessage("修改失败", c)
 	} else {

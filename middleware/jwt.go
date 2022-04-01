@@ -30,3 +30,15 @@ func AdminAuth() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+func HighestAdminAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userId := c.Request.Header.Get("x-user-id")
+		accept := service.FindHighestAndAdminUser(userId)
+		if !accept {
+			response.FailWithAuthAdminMessage("用户非最高管理员", c)
+			c.Abort()
+		}
+		c.Next()
+	}
+}
