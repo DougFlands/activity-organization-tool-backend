@@ -33,7 +33,6 @@ func Routers() *gin.Engine {
 	PrivateGroup := Router.Group("")
 	PrivateGroup.Use(middleware.RegAuth())
 	{
-		router.InitUserRouter(PrivateGroup)               // 注册用户路由
 		router.InitBusActivityPrivateRouter(PrivateGroup) // 注册用户路由
 	}
 
@@ -43,6 +42,13 @@ func Routers() *gin.Engine {
 		router.InitBusGameAdminRouter(AdminGroup)     // 游戏管理
 		router.InitBusActivityAdminRouter(AdminGroup) // 注册活动路由
 	}
+
+	HighestAdminGroup := Router.Group("")
+	HighestAdminGroup.Use(middleware.HighestAdminAuth())
+	{
+		router.InitUserHighestAdminRouter(HighestAdminGroup) // 查找所有用户
+	}
+
 	global.GVA_LOG.Info("router register success")
 	return Router
 }

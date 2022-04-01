@@ -1,18 +1,15 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: config.yaml
+  name: gvaconfig
   annotations:
-    flipped-aurora/gin-vue-admin: backend
-    github: "https://github.com/flipped-aurora/gin-vue-admin.git"
     app.kubernetes.io/version: 0.0.1
+    strategy.spinnaker.io/versioned: "false"
   labels:
     app: gva-server
     version: gva-vue3
 data:
-  config.yaml: |
-    # github.com/flipped-aurora/gin-vue-admin/server Global Configuration
-
+  config.docker.yaml: |
     # zap logger configuration
     zap:
       level: 'info'
@@ -28,7 +25,7 @@ data:
     # redis configuration
     redis:
       db: 0
-      addr: '127.0.0.1:6379'
+      addr: 'xx.xx.xx.xx:30379'
       password: ''
 
     # email configuration
@@ -47,7 +44,7 @@ data:
 
     # system configuration
     system:
-      env: 'develop'  # Change to "develop" to skip authentication for development mode
+      env: 'public'  # Change to "develop" to skip authentication for development mode
       addr: 8888
       db-type: 'mysql'
       oss-type: 'local'    # 控制oss选择走本期还是 七牛等其他仓 自行增加其他oss仓可以在 server/utils/upload/upload.go 中 NewOss函数配置
@@ -62,13 +59,13 @@ data:
     # mysql connect configuration
     # 未初始化之前请勿手动修改数据库信息！！！如果一定要手动初始化请看（https://www.github.com/flipped-aurora/gin-vue-admin/server.com/docs/first）
     mysql:
-      path: ''
-      config: ''
+      path: 'xx.xx.xx.xx:30060'
+      config: 'charset=utf8mb4&parseTime=True&loc=Local'
       db-name: ''
-      username: ''
+      username: 'root'
       password: ''
-      max-idle-conns: 10
-      max-open-conns: 100
+      max-idle-conns: 0
+      max-open-conns: 0
       log-mode: false
       log-zap: ""
 
@@ -140,3 +137,7 @@ data:
         { tableName: "jwt_blacklists" , compareField: "created_at", interval: "168h" }
         #{ tableName: "log2" , compareField: "created_at", interval: "2160h" }
       ]
+    # 修改项目
+    Wx:
+      app-id: 
+      app-secret:
