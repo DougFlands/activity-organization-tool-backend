@@ -102,11 +102,11 @@ func UpdateBusActivity(c *gin.Context) {
 func FindBusActivity(c *gin.Context) {
 	var busAct model.BusActivity
 	_ = c.ShouldBindQuery(&busAct)
-	if err, rebusAct := service.GetBusActivity(busAct.ID); err != nil {
+	if err, busAct := service.GetBusActivity(busAct.ID); err != nil {
 		global.GVA_LOG.Error("查询失败!", zap.Any("err", err))
 		response.FailWithMessage("查询失败", c)
 	} else {
-		response.OkWithData(gin.H{"rebusAct": rebusAct}, c)
+		response.OkWithData(gin.H{"busAct": busAct}, c)
 	}
 }
 
@@ -168,6 +168,10 @@ func InvolvedOrExitActivities(c *gin.Context) {
 		global.GVA_LOG.Error("参与失败!", zap.Any("err", err))
 		response.FailWithMessage(err.Error(), c)
 	} else {
-		response.OkWithMessage("参与成功", c)
+		if busAct.Status == 1 {
+			response.OkWithMessage("参与成功", c)
+		} else {
+			response.OkWithMessage("退出成功", c)
+		}
 	}
 }

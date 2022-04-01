@@ -59,8 +59,20 @@ func UpdateBusActivity(busAct model.BusActivity) (err error) {
 //@param: id uint
 //@return: err error, busAct model.BusActivity
 
-func GetBusActivity(id uint) (err error, busAct model.BusActivity) {
-	err = global.GVA_DB.Where("id = ?", id).First(&busAct).Error
+func GetBusActivity(id uint) (err error, busActDetail model.BusActivityDetail) {
+	var busAct model.BusActivity
+	// 创建db
+	db := global.GVA_DB.Model(&model.BusActivity{})
+	// 如果有条件搜索 下方会自动创建搜索语句
+	// 查询当前用户创建的活动
+	db = db.Where("id = ?", id).Preload("User").Preload("BusGame")
+	err = db.Find(&busAct).Error
+	// 搜索参与人数
+	participants, _, _ := findInvolvedParticipants(0, id)
+	busAct.Participants = participants
+	userList, err := findInvolvedUser(id)
+	busActDetail.BusActivity = busAct
+	busActDetail.UserList = userList
 	return
 }
 
@@ -89,7 +101,7 @@ func GetBusActivityInfoList(info request.BusActivitySearch) (err error, list int
 
 	// 搜索参与人数
 	for i := 0; i < len(busActs); i++ {
-		participants, _, _ := findInvolvedParticipants(busActs[i].UserId, busActs[i].ID)
+		participants, _, _ := findInvolvedParticipants(0, busActs[i].ID)
 		busActs[i].Participants = participants
 	}
 	return err, busActs, total
@@ -113,7 +125,7 @@ func GetBusInvolvedActivityList(info request.BusInvolvedActivitySearch) (err err
 	err = db.Limit(limit).Offset(offset).Find(&busInvolvedActs).Error
 	// 搜索参与人数
 	for i := 0; i < len(busInvolvedActs); i++ {
-		participants, _, _ := findInvolvedParticipants(busInvolvedActs[i].UserId, uint(busInvolvedActs[i].ActivityId))
+		participants, _, _ := findInvolvedParticipants(0, uint(busInvolvedActs[i].ActivityId))
 		busInvolvedActs[i].Activity.Participants = participants
 	}
 	return err, busInvolvedActs, total
@@ -162,4 +174,18 @@ func findInvolvedParticipants(userId int, activityId uint) (participant int, inv
 	involvedDb = involvedDb.Where("status = 1").Preload("User").Preload("Activity")
 	err = involvedDb.Count(&participants).Error
 	return int(participants), involvedActivity, err
+}
+
+// 搜索参与的人
+func findInvolvedUser(activityId uint) (involvedUser []model.SysUserInfo, err error) {
+	var involvedActivity []model.BusInvolvedActivitys
+
+	involvedActivityDb := global.GVA_DB.Model(&involvedActivity)
+	involvedActivityDb = involvedActivityDb.Where("activity_id = ? and status = 1", activityId).Preload("User").Find(&involvedActivity)
+	err = involvedActivityDb.Find(&involvedActivity).Error
+
+	for i := 0; i < len(involvedActivity); i++ {
+		involvedUser = append(involvedUser, involvedActivity[i].User)
+	}
+	return
 }
