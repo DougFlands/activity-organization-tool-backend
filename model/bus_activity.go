@@ -19,6 +19,11 @@ type BusActivity struct {
 	DateTime     *LocalTime `json:"dateTime" form:"dateTime" gorm:"column:date_time;comment:时间;"`
 }
 
+type BusActivityDetail struct {
+	BusActivity
+	UserList []SysUserInfo `json:"userList" form:"userList"`
+}
+
 func (BusActivity) TableName() string {
 	return "bus_activity"
 }
