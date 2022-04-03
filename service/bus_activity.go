@@ -93,9 +93,10 @@ func GetBusActivityInfoList(info request.BusActivitySearch, userId int) (err err
 	if info.UserId != 0 {
 		db = db.Where("user_id = ?", info.UserId)
 	} else {
+		// 查询所有活动，此时需要过滤
 		db = db.Where("date_time >= ?", time.Now().Format("2006-01-02 15:04:05"))
 	}
-	db = db.Order("date_time Desc").Preload("User").Preload("BusGame")
+	db = db.Order("date_time asc").Preload("User").Preload("BusGame")
 	err = db.Count(&total).Error
 	err = db.Limit(limit).Offset(offset).Find(&busActs).Error
 
