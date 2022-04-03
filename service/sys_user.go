@@ -38,7 +38,9 @@ func Login(u model.SysLoginInfo) (sysUserInfo model.SysUserInfo, err error) {
 		return model.SysUserInfo{}, err
 	}
 	userInfo := model.SysUserInfo{
-		OpenID: session.OpenID,
+		OpenID:    session.OpenID,
+		AvatarUrl: u.AvatarUrl,
+		NickName:  u.NickName,
 	}
 
 	// 搜索是否存在数据 TODO: 锁表
