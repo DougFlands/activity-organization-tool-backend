@@ -38,15 +38,15 @@ func Login(u model.SysLoginInfo) (sysUserInfo model.SysUserInfo, err error) {
 		return model.SysUserInfo{}, err
 	}
 	userInfo := model.SysUserInfo{
-		OpenID:    session.OpenID,
-		AvatarUrl: u.AvatarUrl,
-		NickName:  u.NickName,
+		OpenID: session.OpenID,
 	}
 
-	// 搜索是否存在数据
+	// 搜索是否存在数据 TODO: 锁表
 	if !errors.Is(global.GVA_DB.Where("openID = ?", userInfo.OpenID).First(&userInfo).Error, gorm.ErrRecordNotFound) {
 		// 存在则更新
-		err = global.GVA_DB.Where("openID = ?", userInfo.OpenID).Updates(&userInfo).Error
+		userInfo.AvatarUrl = u.AvatarUrl
+		userInfo.NickName = u.NickName
+		err = global.GVA_DB.Where("openID = ?", userInfo.OpenID).Updates(userInfo).Error
 		return userInfo, err
 	}
 
