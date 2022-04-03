@@ -82,7 +82,7 @@ func GetBusActivity(id uint) (err error, busActDetail model.BusActivityDetail) {
 //@param: info request.BusActivitySearch
 //@return: err error, list interface{}, total int64
 
-func GetBusActivityInfoList(info request.BusActivitySearch) (err error, list []response.BusInvolvedActivitysRes, total int64) {
+func GetBusActivityInfoList(info request.BusActivitySearch, userId int) (err error, list []response.BusInvolvedActivitysRes, total int64) {
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 	// 创建db
@@ -103,7 +103,8 @@ func GetBusActivityInfoList(info request.BusActivitySearch) (err error, list []r
 	for i := 0; i < len(busActs); i++ {
 		participants, _, _ := findInvolvedParticipants(0, busActs[i].ID)
 		busActs[i].Participants = participants
-		IsInvolved := findIsInvolved(uint(busActs[i].ID), busActs[i].UserId)
+
+		IsInvolved := findIsInvolved(uint(busActs[i].ID), int(userId))
 		list = append(list, response.BusInvolvedActivitysRes{
 			BusActivity: busActs[i],
 			IsInvolved:  IsInvolved,

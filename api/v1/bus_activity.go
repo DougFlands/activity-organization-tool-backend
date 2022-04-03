@@ -120,9 +120,12 @@ func FindBusActivity(c *gin.Context) {
 // @Router /busAct/getBusActivityList [get]
 func GetBusActivityList(c *gin.Context) {
 	var pageInfo request.BusActivitySearch
+	userId := c.GetHeader("x-user-id")
+	userIdRes, _ := strconv.Atoi(userId)
+
 	_ = c.ShouldBindQuery(&pageInfo)
 
-	if err, list, total := service.GetBusActivityInfoList(pageInfo); err != nil {
+	if err, list, total := service.GetBusActivityInfoList(pageInfo, userIdRes); err != nil {
 		global.GVA_LOG.Error("获取失败!", zap.Any("err", err))
 		response.FailWithMessage("获取失败", c)
 	} else {
