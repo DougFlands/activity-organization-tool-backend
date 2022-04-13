@@ -7,6 +7,8 @@ import (
 	"gin-vue-admin/model/request"
 	"gin-vue-admin/model/response"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 //@author: [piexlmax](https://github.com/piexlmax)
@@ -28,6 +30,10 @@ func CreateBusActivity(busAct model.BusActivity) (err error) {
 
 func DeleteBusActivity(busAct model.BusActivity) (err error) {
 	err = global.GVA_DB.Delete(&busAct).Error
+
+	db := global.GVA_DB.Model(&model.BusInvolvedActivitys{})
+	db = db.Delete(model.BusInvolvedActivitys{}, "activity_id = ?", busAct.ID)
+
 	return err
 }
 
@@ -124,9 +130,11 @@ func GetBusInvolvedActivityList(info request.BusInvolvedActivitySearch) (err err
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 	// 创建db
-	db := global.GVA_DB.Model(&model.BusInvolvedActivitys{})
+	db := global.GVA_DB.Model(&model.BusInvolvedActivitys{}).Unscoped()
 	// 如果有条件搜索 下方会自动创建搜索语句
-	db = db.Where("user_id = ? AND status = 1", info.UserId).Order("updated_at Desc").Preload("User").Preload("Activity").Preload("Activity.BusGame").Preload("Activity.User")
+	db = db.Where("user_id = ? AND status = 1", info.UserId).Order("updated_at Desc").Preload("User").Preload("Activity", func(db *gorm.DB) *gorm.DB {
+		return db.Unscoped()
+	}).Preload("Activity.BusGame").Preload("Activity.User")
 	err = db.Count(&total).Error
 	err = db.Limit(limit).Offset(offset).Find(&busInvolvedActs).Error
 	// 搜索参与人数
@@ -137,29 +145,43 @@ func GetBusInvolvedActivityList(info request.BusInvolvedActivitySearch) (err err
 	return err, busInvolvedActs, total
 }
 
+// 参与或退出活动
 func InvolvedOrExitActivities(busAct model.BusInvolvedActivitys) (err error) {
+	// 新建一个，搜索时不能覆盖 busAct 的数据
 	var searchBusAct model.BusInvolvedActivitys
 	db := global.GVA_DB.Model(&model.BusInvolvedActivitys{})
-	// 如果有条件搜索 下方会自动创建搜索语句
+
 	if err := db.Where("user_id = ? AND activity_id = ?", busAct.UserId, busAct.ActivityId).Preload("Activity.BusGame").First(&searchBusAct).Error; err != nil {
 		err = global.GVA_DB.Create(&busAct).Error
 		return err
 	}
+
 	busAct.CreatedAt = searchBusAct.CreatedAt
 	busAct.ID = searchBusAct.ID
 
+	// 搜索该用户是否已参与
+	participants, _, _ := findInvolvedParticipants(busAct.UserId, uint(busAct.ActivityId))
+	// 活动参与人数
+	involvedActivityParticipants, _, _ := findInvolvedParticipants(0, uint(busAct.ActivityId))
+
+	// 对应的活动
+	activitysDb := global.GVA_DB.Model(&model.BusActivity{})
+
 	if busAct.Status == 1 {
-		participants, _, _ := findInvolvedParticipants(busAct.UserId, uint(busAct.ActivityId))
 
 		if participants != 0 {
 			return errors.New("已参与过该活动")
 		}
 
-		involvedActivityParticipants, _, _ := findInvolvedParticipants(0, uint(busAct.ActivityId))
 		if involvedActivityParticipants != 0 && involvedActivityParticipants >= searchBusAct.Activity.BusGame.PeopleNum {
 			return errors.New("参与人数达到上限")
 		}
 
+		// 参与成功，刷新人数
+		activitysDb.Model(&model.BusActivity{}).Where("id = ?", searchBusAct.ActivityId).Update("participants", involvedActivityParticipants+1)
+	} else {
+		// 退出成功，刷新人数
+		activitysDb.Model(&model.BusActivity{}).Where("id = ?", searchBusAct.ActivityId).Update("participants", involvedActivityParticipants-1)
 	}
 	err = global.GVA_DB.Save(&busAct).Error
 	return err
