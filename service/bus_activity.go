@@ -6,6 +6,7 @@ import (
 	"gin-vue-admin/model"
 	"gin-vue-admin/model/request"
 	"gin-vue-admin/model/response"
+	"strconv"
 	"time"
 
 	"gorm.io/gorm"
@@ -151,16 +152,32 @@ func InvolvedOrExitActivities(busAct model.BusInvolvedActivitys) (err error) {
 	var searchBusAct model.BusInvolvedActivitys
 	db := global.GVA_DB.Model(&model.BusInvolvedActivitys{})
 
-	if err := db.Where("user_id = ? AND activity_id = ?", busAct.UserId, busAct.ActivityId).Preload("Activity.BusGame").First(&searchBusAct).Error; err != nil {
-		err = global.GVA_DB.Create(&busAct).Error
+	// 搜索该用户是否已参与
+	participants, _, _ := findInvolvedParticipants(busAct.UserId, uint(busAct.ActivityId))
+	if participants == 0 {
+		// 是否参与标识，创建一个未参与的记录
+		isInvolved := false
+		if busAct.Status == 1 {
+			busAct.Status = 0
+			isInvolved = true
+		}
+		if err := global.GVA_DB.Create(&busAct).Error; err != nil {
+			return err
+		}
+		// 恢复参与字段的数据
+		if isInvolved {
+			busAct.Status = 1
+		}
+	}
+
+	// 填充参与的数据
+	if err := db.Where("user_id = ? AND activity_id = ?", busAct.UserId, busAct.ActivityId).Preload("Activity.User").Preload("Activity.BusGame").First(&searchBusAct).Error; err != nil {
 		return err
 	}
 
 	busAct.CreatedAt = searchBusAct.CreatedAt
 	busAct.ID = searchBusAct.ID
 
-	// 搜索该用户是否已参与
-	participants, _, _ := findInvolvedParticipants(busAct.UserId, uint(busAct.ActivityId))
 	// 活动参与人数
 	involvedActivityParticipants, _, _ := findInvolvedParticipants(0, uint(busAct.ActivityId))
 
@@ -179,6 +196,19 @@ func InvolvedOrExitActivities(busAct model.BusInvolvedActivitys) (err error) {
 
 		// 参与成功，刷新人数
 		activitysDb.Model(&model.BusActivity{}).Where("id = ?", searchBusAct.ActivityId).Update("participants", involvedActivityParticipants+1)
+
+		// 活动人满
+		if involvedActivityParticipants+1 >= searchBusAct.Activity.BusGame.PeopleNum {
+			id := strconv.Itoa(int(searchBusAct.ID))
+			sendMsg(model.WxMsg{
+				ActivityId:   id,
+				ActivityName: searchBusAct.Activity.BusGame.Name,
+				ActivityTime: searchBusAct.Activity.DateTime.String(),
+				Content:      "活动人数已满",
+				UserOpenId:   searchBusAct.Activity.User.OpenID,
+			})
+		}
+
 	} else {
 		// 退出成功，刷新人数
 		activitysDb.Model(&model.BusActivity{}).Where("id = ?", searchBusAct.ActivityId).Update("participants", involvedActivityParticipants-1)
