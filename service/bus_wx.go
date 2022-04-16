@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"gin-vue-admin/global"
 	"gin-vue-admin/model"
 	"gin-vue-admin/utils"
@@ -27,33 +26,33 @@ func sendMsg(wxmsg model.WxMsg) {
 
 	// 日志
 	utils.ToolJsonFmt(map[string]interface{}{
-		"wxmsg":      wxmsg,
-		"TemplateID": m.TemplateID,
-		"url":        "/pages/activity/detail?id=" + wxmsg.ActivityId,
+		"wxmsg":       wxmsg,
+		"TemplateMsg": m.TemplateMsg,
+		"url":         "/pages/activity/detail?id=" + wxmsg.ActivityId,
 	})
 
-	for _, V := range m.TemplateID {
+	for _, V := range m.TemplateMsg {
 		msg := &subscribe.Message{
 			ToUser:     wxmsg.UserOpenId,
-			TemplateID: V,
+			TemplateID: V.Id,
 			Data: map[string]*subscribe.DataItem{
+				// 模板1
 				// 活动名称
-				"thing1": {
+				V.ActivityName: {
 					Value: wxmsg.ActivityName,
 				},
 				// 活动时间
-				"time2": {
+				V.ActivityTime: {
 					Value: wxmsg.ActivityTime,
 				},
 				// 提醒内容
-				"thing3": {
+				V.ActivityContent: {
 					Value: wxmsg.Content,
 				},
 			},
 			Page: "/pages/activity/detail?id=" + wxmsg.ActivityId,
 		}
 		err := sub.Send(msg)
-		fmt.Println(err)
 		if err == nil {
 			break
 		}
