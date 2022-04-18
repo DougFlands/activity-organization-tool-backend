@@ -199,7 +199,7 @@ func InvolvedOrExitActivities(busAct model.BusInvolvedActivitys) (err error) {
 
 		// 活动人满
 		if involvedActivityParticipants+1 >= searchBusAct.Activity.BusGame.PeopleNum {
-			id := strconv.Itoa(int(searchBusAct.ID))
+			id := strconv.Itoa(int(searchBusAct.ActivityId))
 			sendMsg(model.WxMsg{
 				ActivityId:   id,
 				ActivityName: searchBusAct.Activity.BusGame.Name,
