@@ -190,7 +190,7 @@ func InvolvedOrExitActivities(busAct model.BusInvolvedActivitys) (err error) {
 			return errors.New("已参与过该活动")
 		}
 
-		if involvedActivityParticipants != 0 && involvedActivityParticipants >= searchBusAct.Activity.BusGame.PeopleNum {
+		if involvedActivityParticipants != 0 && involvedActivityParticipants >= searchBusAct.Activity.BusGame.PeopleNum+4 {
 			return errors.New("参与人数达到上限")
 		}
 
@@ -212,6 +212,39 @@ func InvolvedOrExitActivities(busAct model.BusInvolvedActivitys) (err error) {
 	} else {
 		// 退出成功，刷新人数
 		activitysDb.Model(&model.BusActivity{}).Where("id = ?", searchBusAct.ActivityId).Update("participants", involvedActivityParticipants-1)
+		// 备胎转正
+		involvedUser, err := findInvolvedUser(uint(searchBusAct.ActivityId))
+		if err != nil {
+			return err
+		}
+		// 是否为玩家而不是备胎
+		isPlayer := 0
+		// 第一个备胎id
+		firstSpareTireUserId := 0
+		for i, v := range involvedUser {
+			if searchBusAct.Activity.BusGame.PeopleNum < i {
+				break
+			}
+			if searchBusAct.Activity.BusGame.PeopleNum == i+1 {
+				firstSpareTireUserId = int(v.ID)
+			}
+			if busAct.UserId == int(v.ID) {
+				isPlayer = busAct.UserId
+				break
+			}
+		}
+		if isPlayer != 0 {
+			firstSpareTireInvolvedInfo := model.BusInvolvedActivitys{
+				UserId:     firstSpareTireUserId,
+				ActivityId: busAct.ActivityId,
+				Status:     1,
+			}
+			err := InvolvedOrExitActivities(firstSpareTireInvolvedInfo)
+			if err != nil {
+				return err
+			}
+		}
+
 	}
 	err = global.GVA_DB.Save(&busAct).Error
 	return err
