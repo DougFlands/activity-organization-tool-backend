@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"gin-vue-admin/global"
 	"gin-vue-admin/model"
 	"gin-vue-admin/model/request"
@@ -161,9 +162,13 @@ func InvolvedOrExitActivities(busAct model.BusInvolvedActivitys) (err error) {
 			busAct.Status = 0
 			isInvolved = true
 		}
-		if err := global.GVA_DB.Create(&busAct).Error; err != nil {
-			return err
+		hassInvolved := findHasInvolvedStatus(uint(busAct.ActivityId), busAct.UserId)
+		if !hassInvolved {
+			if err := global.GVA_DB.Save(&busAct).Error; err != nil {
+				return err
+			}
 		}
+
 		// 恢复参与字段的数据
 		if isInvolved {
 			busAct.Status = 1
@@ -189,8 +194,7 @@ func InvolvedOrExitActivities(busAct model.BusInvolvedActivitys) (err error) {
 		if participants != 0 {
 			return errors.New("已参与过该活动")
 		}
-
-		if involvedActivityParticipants != 0 && involvedActivityParticipants >= searchBusAct.Activity.BusGame.PeopleNum+4 {
+		if involvedActivityParticipants != 0 && involvedActivityParticipants >= searchBusAct.Activity.BusGame.PeopleNum+3 {
 			return errors.New("参与人数达到上限")
 		}
 
@@ -198,9 +202,10 @@ func InvolvedOrExitActivities(busAct model.BusInvolvedActivitys) (err error) {
 		activitysDb.Model(&model.BusActivity{}).Where("id = ?", searchBusAct.ActivityId).Update("participants", involvedActivityParticipants+1)
 
 		// 活动人满
-		if involvedActivityParticipants+1 >= searchBusAct.Activity.BusGame.PeopleNum {
+		// >= 判断会导致候补参加时也会通知
+		if involvedActivityParticipants+1 == searchBusAct.Activity.BusGame.PeopleNum {
 			id := strconv.Itoa(int(searchBusAct.ActivityId))
-			sendMsg(model.WxMsg{
+			sendActReadyMsg(model.WxMsg{
 				ActivityId:   id,
 				ActivityName: searchBusAct.Activity.BusGame.Name,
 				ActivityTime: searchBusAct.Activity.DateTime.String(),
@@ -217,34 +222,31 @@ func InvolvedOrExitActivities(busAct model.BusInvolvedActivitys) (err error) {
 		if err != nil {
 			return err
 		}
-		// 是否为玩家而不是备胎
-		isPlayer := 0
+		// 退出的是否为玩家而不是备胎
+		exitPlayerId := 0
 		// 第一个备胎id
-		firstSpareTireUserId := 0
+		firstSpareTireUserId := "0"
 		for i, v := range involvedUser {
-			if searchBusAct.Activity.BusGame.PeopleNum < i {
-				break
-			}
-			if searchBusAct.Activity.BusGame.PeopleNum == i+1 {
-				firstSpareTireUserId = int(v.ID)
+			if searchBusAct.Activity.BusGame.PeopleNum == i {
+				s := strconv.Itoa(int(v.ID))
+				firstSpareTireUserId = s
 			}
 			if busAct.UserId == int(v.ID) {
-				isPlayer = busAct.UserId
-				break
+				exitPlayerId = busAct.UserId
 			}
 		}
-		if isPlayer != 0 {
-			firstSpareTireInvolvedInfo := model.BusInvolvedActivitys{
-				UserId:     firstSpareTireUserId,
-				ActivityId: busAct.ActivityId,
-				Status:     1,
-			}
-			err := InvolvedOrExitActivities(firstSpareTireInvolvedInfo)
-			if err != nil {
-				return err
-			}
+		fmt.Printf("备胎转正 - 游戏ID: %d 退出玩家: %d, 备胎id: %s", busAct.ActivityId, exitPlayerId, firstSpareTireUserId)
+		_, firstSpareTireUser := FindUser(firstSpareTireUserId)
+		// 有玩家退出且有备胎转正
+		if exitPlayerId != 0 && firstSpareTireUserId != "0" {
+			id := strconv.Itoa(int(searchBusAct.ActivityId))
+			sendActSpareTireInvolved(model.WxMsg{
+				ActivityId:   id,
+				ActivityName: searchBusAct.Activity.BusGame.Name,
+				Content:      "恭喜！您参与的活动备胎转正！",
+				UserOpenId:   firstSpareTireUser.OpenID,
+			})
 		}
-
 	}
 	err = global.GVA_DB.Save(&busAct).Error
 	return err
@@ -272,7 +274,7 @@ func findInvolvedUser(activityId uint) (involvedUser []model.SysUserInfo, err er
 
 	involvedActivityDb := global.GVA_DB.Model(&involvedActivity)
 	involvedActivityDb = involvedActivityDb.Where("activity_id = ? and status = 1", activityId).Preload("User").Find(&involvedActivity)
-	err = involvedActivityDb.Find(&involvedActivity).Error
+	err = involvedActivityDb.Order("updated_at asc").Find(&involvedActivity).Error
 
 	for i := 0; i < len(involvedActivity); i++ {
 		involvedUser = append(involvedUser, involvedActivity[i].User)
@@ -286,4 +288,12 @@ func findIsInvolved(activityId uint, userId int) (isInvolved bool) {
 	involvedActivityDb := global.GVA_DB.Model(&involvedActivity)
 	_ = involvedActivityDb.Where("activity_id = ? and user_id = ? and status = 1", activityId, userId).First(&involvedActivity).Error
 	return involvedActivity.UserId != 0
+}
+
+// 搜索是否有参与记录
+func findHasInvolvedStatus(activityId uint, userId int) (hasInvolved bool) {
+	var involvedActivity model.BusInvolvedActivitys
+	involvedActivityDb := global.GVA_DB.Model(&involvedActivity)
+	_ = involvedActivityDb.Where("activity_id = ? and user_id = ?", activityId, userId).First(&involvedActivity).Error
+	return involvedActivity.ID != 0
 }

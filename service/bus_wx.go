@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"gin-vue-admin/global"
 	"gin-vue-admin/model"
 	"gin-vue-admin/utils"
@@ -11,7 +12,7 @@ import (
 	subscribe "github.com/silenceper/wechat/v2/miniprogram/subscribe"
 )
 
-func sendMsg(wxmsg model.WxMsg) {
+func creatWxmsg() (sub *subscribe.Subscribe) {
 	wc := wechat.NewWechat()
 	memory := cache.NewMemory()
 	m := global.GVA_CONFIG.Wx
@@ -22,21 +23,57 @@ func sendMsg(wxmsg model.WxMsg) {
 	}
 
 	mini := wc.GetMiniProgram(cfg)
-	sub := mini.GetSubscribe()
+	sub = mini.GetSubscribe()
+	return sub
+}
 
+func sendActSpareTireInvolved(wxmsg model.WxMsg) {
+	sub := creatWxmsg()
 	// 日志
+	fmt.Println("备胎转正")
 	utils.ToolJsonFmt(map[string]interface{}{
-		"wxmsg":       wxmsg,
-		"TemplateMsg": m.TemplateMsg,
-		"url":         "/pages/activity/detail?id=" + wxmsg.ActivityId,
+		"wxmsg":                        wxmsg,
+		"TemplateActSpareTireInvolved": global.GVA_CONFIG.Wx.TemplateActSpareTireInvolved,
+		"url":                          "/pages/activity/detail?id=" + wxmsg.ActivityId,
 	})
-
-	for _, V := range m.TemplateMsg {
+	for _, V := range global.GVA_CONFIG.Wx.TemplateActSpareTireInvolved {
 		msg := &subscribe.Message{
 			ToUser:     wxmsg.UserOpenId,
 			TemplateID: V.Id,
 			Data: map[string]*subscribe.DataItem{
-				// 模板1
+				// 活动名称
+				V.ActivityName: {
+					Value: wxmsg.ActivityName,
+				},
+				// 提醒内容
+				V.ActivityContent: {
+					Value: wxmsg.Content,
+				},
+			},
+			Page: "/pages/activity/detail?id=" + wxmsg.ActivityId,
+		}
+		err := sub.Send(msg)
+		if err == nil {
+			break
+		}
+	}
+}
+
+func sendActReadyMsg(wxmsg model.WxMsg) {
+	sub := creatWxmsg()
+	// 日志
+	fmt.Println("活动人齐")
+	utils.ToolJsonFmt(map[string]interface{}{
+		"wxmsg":            wxmsg,
+		"TemplateActReady": global.GVA_CONFIG.Wx.TemplateActReady,
+		"url":              "/pages/activity/detail?id=" + wxmsg.ActivityId,
+	})
+
+	for _, V := range global.GVA_CONFIG.Wx.TemplateActReady {
+		msg := &subscribe.Message{
+			ToUser:     wxmsg.UserOpenId,
+			TemplateID: V.Id,
+			Data: map[string]*subscribe.DataItem{
 				// 活动名称
 				V.ActivityName: {
 					Value: wxmsg.ActivityName,

@@ -68,12 +68,11 @@ func SetUserAuthority(id int, isAdmin int) (err error) {
 	return err
 }
 
-func FindUser(userId string) (accept bool) {
-	var user model.SysUserInfo
+func FindUser(userId string) (accept bool, user model.SysUserInfo) {
 	if err := global.GVA_DB.Where("id = ?", userId).First(&user).Error; err != nil {
-		return false
+		return false, user
 	}
-	return true
+	return true, user
 }
 
 func FindAdminUser(userId string) (accept bool) {

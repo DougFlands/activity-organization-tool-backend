@@ -10,7 +10,7 @@ import (
 func RegAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userId := c.Request.Header.Get("x-user-id")
-		accept := service.FindUser(userId)
+		accept, _ := service.FindUser(userId)
 		if !accept {
 			response.FailWithAuthUserMessage("用户未注册", c)
 			c.Abort()
