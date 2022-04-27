@@ -22,7 +22,8 @@ type BusActivity struct {
 
 type BusActivityDetail struct {
 	BusActivity
-	UserList []SysUserInfo `json:"userList" form:"userList"`
+	UserList   []SysUserInfo `json:"userList" form:"userList"`
+	IsInvolved bool          `json:"isInvolved"`
 }
 
 func (BusActivity) TableName() string {

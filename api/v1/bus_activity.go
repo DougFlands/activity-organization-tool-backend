@@ -102,7 +102,10 @@ func UpdateBusActivity(c *gin.Context) {
 func FindBusActivity(c *gin.Context) {
 	var busAct model.BusActivity
 	_ = c.ShouldBindQuery(&busAct)
-	if err, busAct := service.GetBusActivity(busAct.ID); err != nil {
+	userId := c.GetHeader("x-user-id")
+	userIdRes, _ := strconv.Atoi(userId)
+
+	if err, busAct := service.GetBusActivity(busAct.ID, userIdRes); err != nil {
 		global.GVA_LOG.Error("查询失败!", zap.Any("err", err))
 		response.FailWithMessage("查询失败", c)
 	} else {

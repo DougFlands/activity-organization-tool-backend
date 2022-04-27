@@ -67,7 +67,7 @@ func UpdateBusActivity(busAct model.BusActivity) (err error) {
 //@param: id uint
 //@return: err error, busAct model.BusActivity
 
-func GetBusActivity(id uint) (err error, busActDetail model.BusActivityDetail) {
+func GetBusActivity(id uint, userId int) (err error, busActDetail model.BusActivityDetail) {
 	var busAct model.BusActivity
 	// 创建db
 	db := global.GVA_DB.Model(&model.BusActivity{})
@@ -79,8 +79,10 @@ func GetBusActivity(id uint) (err error, busActDetail model.BusActivityDetail) {
 	participants, _, _ := findInvolvedParticipants(0, id)
 	busAct.Participants = participants
 	userList, err := findInvolvedUser(id)
-	busActDetail.BusActivity = busAct
 	busActDetail.UserList = userList
+	busActDetail.BusActivity = busAct
+	IsInvolved := findIsInvolved(id, userId)
+	busActDetail.IsInvolved = IsInvolved
 	return
 }
 
