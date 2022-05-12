@@ -34,3 +34,11 @@ type UserList struct {
 	PageInfo
 	UserId int `json:"userId" form:"userId"` //
 }
+
+type UserBanList struct {
+	PageInfo
+	PlayerId int    `json:"playerId" form:"playerId"`
+	DmId     int    `json:"dmId" form:"dmId"`
+	Status   int    `json:"status" form:"status"`
+	Content  string `json:"content" form:"content"`
+}

@@ -41,6 +41,7 @@ func Routers() *gin.Engine {
 	{
 		router.InitBusGameAdminRouter(AdminGroup)     // 游戏管理
 		router.InitBusActivityAdminRouter(AdminGroup) // 注册活动路由
+		router.InitUserAdminRouter(AdminGroup)
 	}
 
 	HighestAdminGroup := Router.Group("")

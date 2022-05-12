@@ -109,3 +109,79 @@ func FindUserAndAdminUser(info request.UserList) (err error, list interface{}, t
 	err = db.Limit(limit).Offset(offset).Find(&busActs).Error
 	return err, busActs, total
 }
+
+// 获取黑名单列表
+func FindBanUserList(info request.UserBanList) (err error, banUserInfo []model.SysBanUserInfo, total int64) {
+	limit := info.PageSize
+	offset := info.PageSize * (info.Page - 1)
+	// 创建db
+	db := global.GVA_DB.Model(&model.SysBanUserInfo{})
+
+	if info.Status > 0 {
+		db = db.Where("status = ?", info.Status)
+	}
+	if info.DmId > 0 {
+		db = db.Where("dmId = ?", info.DmId)
+	}
+	db = db.Order("created_at Desc").Preload("Player").Preload("Dm")
+	err = db.Count(&total).Error
+	err = db.Limit(limit).Offset(offset).Find(&banUserInfo).Error
+	if err != nil {
+		return err, nil, 0
+	}
+	return
+}
+
+// 用户加入/退出黑名单
+func HandleBanUser(banUserInfo model.SysBanUserInfo) (err error) {
+	// 取消拉黑
+	if banUserInfo.Status == 0 {
+		err = global.GVA_DB.Delete(model.SysBanUserInfo{}, "id = ?", banUserInfo.ID).Error
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	var firstBanUserInfo model.SysBanUserInfo
+
+	db := global.GVA_DB.Model(&model.SysBanUserInfo{})
+	err = db.FirstOrCreate(&firstBanUserInfo, model.SysBanUserInfo{
+		PlayerId: banUserInfo.PlayerId,
+		DmId:     banUserInfo.DmId,
+	}).Error
+	if err != nil {
+		return err
+	}
+	// 用户为全局拉黑时，个人无法拉黑
+	if firstBanUserInfo.Status == 2 && banUserInfo.Status == 1 {
+		return errors.New("该用户已被全局拉黑")
+	}
+	err = db.Where("id = ?", firstBanUserInfo.ID).Updates(&banUserInfo).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// 检查用户是否在黑名单里
+func CheckUserIsBan(banUserInfo model.SysBanUserInfo) (result bool, status int, err error) {
+	db := global.GVA_DB.Model(&model.SysBanUserInfo{})
+	db.Where("playerId = ?", banUserInfo.PlayerId)
+	// DM拉黑，如果没有则为全局拉黑
+	if banUserInfo.DmId != 0 {
+		db.Where("dmId = ? OR dmId = 0", banUserInfo.DmId)
+	}
+
+	if err = db.First(&banUserInfo).Error; err != nil {
+		// 未找到，不在黑名单中
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, 0, nil
+		}
+		return false, 0, err
+	}
+	if banUserInfo.Status >= 1 {
+		return true, banUserInfo.Status, nil
+	}
+	return false, 0, nil
+}

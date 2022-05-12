@@ -117,6 +117,7 @@ func InitDB(conf request.InitDB) error {
 
 	err := global.GVA_DB.AutoMigrate(
 		model.SysUserInfo{},
+		model.SysBanUserInfo{},
 		model.SysOperationRecord{},
 		model.BusActivity{},
 		model.BusGame{},
@@ -142,8 +143,7 @@ func InitDB(conf request.InitDB) error {
 // 新加入的表在这里创建
 func InitTable() error {
 	err := global.GVA_DB.AutoMigrate(
-	// model.BusActivity{},
-	// model.BusGame{},
+		model.SysBanUserInfo{},
 	)
 	if err != nil {
 		global.GVA_DB = nil

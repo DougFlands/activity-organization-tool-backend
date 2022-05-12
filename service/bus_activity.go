@@ -101,23 +101,30 @@ func GetBusActivityInfoList(info request.BusActivitySearch, userId int) (err err
 	// 如果有条件搜索 下方会自动创建搜索语句
 	// 查询当前用户创建的活动
 	if info.UserId != 0 {
-		db = db.Where("user_id = ?", info.UserId)
+		db = db.Where("user_id = ?", info.UserId).Order("date_time desc")
 	} else {
 		// 查询所有活动，此时需要过滤
-		db = db.Where("date_time >= ?", time.Now().Format("2006-01-02 15:04:05"))
+		db = db.Where("date_time >= ?", time.Now().Format("2006-01-02 15:04:05")).Order("date_time asc")
 	}
-	db = db.Order("date_time asc").Preload("User").Preload("BusGame")
+
+	// type result struct {
+	// 	ID     int
+	// 	Status int
+	// 	UserId int
+	// }
+	// var results result
+	// db.Select("busactivity.id, b.status, b.user_id").Joins("bus_involved_activity b ON busactivity.id = b.activity_id").Where("b.status = 1").Scan(&results)
+
+	db = db.Preload("User").Preload("BusGame")
+
 	err = db.Count(&total).Error
 	err = db.Limit(limit).Offset(offset).Find(&busActs).Error
 
-	// 搜索参与人数
-	for i := 0; i < len(busActs); i++ {
-		participants, _, _ := findInvolvedParticipants(0, busActs[i].ID)
-		busActs[i].Participants = participants
-
-		IsInvolved := findIsInvolved(uint(busActs[i].ID), int(userId))
+	// 搜索是否参与 TODO: 待优化
+	for _, v := range busActs {
+		IsInvolved := findIsInvolved(uint(v.ID), int(userId))
 		list = append(list, response.BusInvolvedActivitysRes{
-			BusActivity: busActs[i],
+			BusActivity: v,
 			IsInvolved:  IsInvolved,
 		})
 	}
@@ -159,6 +166,7 @@ func InvolvedOrExitActivities(busAct model.BusInvolvedActivitys) (err error) {
 	participants, _, _ := findInvolvedParticipants(busAct.UserId, uint(busAct.ActivityId))
 	if participants == 0 {
 		// 是否参与标识，创建一个未参与的记录
+		// TODO: FirstOrInit 代替
 		isInvolved := false
 		if busAct.Status == 1 {
 			busAct.Status = 0
@@ -192,6 +200,22 @@ func InvolvedOrExitActivities(busAct model.BusInvolvedActivitys) (err error) {
 	activitysDb := global.GVA_DB.Model(&model.BusActivity{})
 
 	if busAct.Status == 1 {
+
+		isBanUser, status, err := CheckUserIsBan(model.SysBanUserInfo{
+			PlayerId: busAct.UserId,
+			DmId:     searchBusAct.Activity.UserId,
+		})
+		if err != nil {
+			return err
+		}
+
+		if isBanUser {
+			if status == 1 {
+				return errors.New("你与该DM相性不和(被拉黑)")
+			} else if status == 2 {
+				return errors.New("你已被禁止参与任何活动，如有疑问，请联系大叔")
+			}
+		}
 
 		if participants != 0 {
 			return errors.New("已参与过该活动")

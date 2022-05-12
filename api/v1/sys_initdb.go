@@ -63,5 +63,6 @@ func InitTable(c *gin.Context) {
 		response.FailWithMessage("创建表失败", c)
 		return
 	}
+	response.OkWithDetailed(gin.H{}, "初始化完成", c)
 	return
 }
