@@ -96,37 +96,26 @@ func GetBusActivityInfoList(info request.BusActivitySearch, userId int) (err err
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 	// 创建db
-	db := global.GVA_DB.Model(&model.BusActivity{})
-	var busActs []model.BusActivity
+	db := global.GVA_DB.Model(&response.BusInvolvedActivitysRes{})
 	// 如果有条件搜索 下方会自动创建搜索语句
 	// 查询当前用户创建的活动
 	if info.UserId != 0 {
 		db = db.Where("user_id = ?", info.UserId).Order("date_time desc")
 	} else {
 		// 查询所有活动，此时需要过滤
+		// TODO: 需要二次排序，人满的移动到最后
 		db = db.Where("date_time >= ?", time.Now().Format("2006-01-02 15:04:05")).Order("date_time asc")
 	}
-
-	// type result struct {
-	// 	ID     int
-	// 	Status int
-	// 	UserId int
-	// }
-	// var results result
-	// db.Select("busactivity.id, b.status, b.user_id").Joins("bus_involved_activity b ON busactivity.id = b.activity_id").Where("b.status = 1").Scan(&results)
-
 	db = db.Preload("User").Preload("BusGame")
-
 	err = db.Count(&total).Error
-	err = db.Limit(limit).Offset(offset).Find(&busActs).Error
+	err = db.Limit(limit).Offset(offset).Find(&list).Error
 
-	// 搜索是否参与 TODO: 待优化
-	for _, v := range busActs {
-		IsInvolved := findIsInvolved(uint(v.ID), int(userId))
-		list = append(list, response.BusInvolvedActivitysRes{
-			BusActivity: v,
-			IsInvolved:  IsInvolved,
-		})
+	if info.UserId != 0 {
+		return
+	}
+	// 搜索是否参与 TODO: 待优化，合为一个sql
+	for i, v := range list {
+		list[i].IsInvolved = findIsInvolved(uint(v.ID), int(userId))
 	}
 	return
 }
@@ -142,17 +131,11 @@ func GetBusInvolvedActivityList(info request.BusInvolvedActivitySearch) (err err
 	offset := info.PageSize * (info.Page - 1)
 	// 创建db
 	db := global.GVA_DB.Model(&model.BusInvolvedActivitys{}).Unscoped()
-	// 如果有条件搜索 下方会自动创建搜索语句
 	db = db.Where("user_id = ? AND status = 1", info.UserId).Order("updated_at Desc").Preload("User").Preload("Activity", func(db *gorm.DB) *gorm.DB {
-		return db.Unscoped()
-	}).Preload("Activity.BusGame").Preload("Activity.User")
+		return db.Unscoped().Joins("BusGame").Joins("User")
+	})
 	err = db.Count(&total).Error
 	err = db.Limit(limit).Offset(offset).Find(&busInvolvedActs).Error
-	// 搜索参与人数
-	for i := 0; i < len(busInvolvedActs); i++ {
-		participants, _, _ := findInvolvedParticipants(0, uint(busInvolvedActs[i].ActivityId))
-		busInvolvedActs[i].Activity.Participants = participants
-	}
 	return err, busInvolvedActs, total
 }
 

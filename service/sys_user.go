@@ -43,7 +43,7 @@ func Login(u model.SysLoginInfo) (sysUserInfo model.SysUserInfo, err error) {
 		NickName:  u.NickName,
 	}
 
-	// 搜索是否存在数据 TODO: 锁表
+	// 搜索是否存在数据
 	if !errors.Is(global.GVA_DB.Where("openID = ?", userInfo.OpenID).First(&userInfo).Error, gorm.ErrRecordNotFound) {
 		// 存在则更新
 		userInfo.AvatarUrl = u.AvatarUrl
