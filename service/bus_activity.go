@@ -103,7 +103,6 @@ func GetBusActivityInfoList(info request.BusActivitySearch, userId int) (err err
 		db = db.Where("user_id = ?", info.UserId).Order("date_time desc")
 	} else {
 		// 查询所有活动，此时需要过滤
-		// TODO: 需要二次排序，人满的移动到最后
 		db = db.Where("date_time >= ?", time.Now().Format("2006-01-02 15:04:05")).Order("date_time asc")
 	}
 	db = db.Preload("User").Preload("BusGame")
