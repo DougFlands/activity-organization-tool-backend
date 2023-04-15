@@ -14,6 +14,7 @@ type BusActivity struct {
 	UserId int         `json:"userId" gorm:"comment:用户id"`
 
 	Location     string     `json:"location" form:"location" gorm:"column:location;comment:地点;"`
+	RminedDate   int        `json:"rminedDate" form:"rminedDate" gorm:"column:rminedDate;comment:时间限制;"`
 	Price        string     `json:"price" form:"price" gorm:"column:price;comment:价格;"`
 	Participants int        `json:"participants" form:"participants" gorm:"column:participants;comment:参与人数;"`
 	DateTime     *LocalTime `json:"dateTime" form:"dateTime" gorm:"column:date_time;comment:开始时间;"`
